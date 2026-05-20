@@ -724,14 +724,23 @@ function ScenarioIntroModal({
           style={styles.introModalCard}
         >
           <Text style={styles.introKicker}>NEW CASE DETECTED ({difficulty.toUpperCase()})</Text>
-          <Text style={styles.introTitle}>{title}</Text>
+          <Text numberOfLines={3} adjustsFontSizeToFit style={styles.introTitle}>
+            {title}
+          </Text>
           <View style={styles.divider} />
-          
-          <Text style={styles.introHeading}>THE SCENARIO</Text>
-          <Text style={styles.introText}>{description}</Text>
 
-          <Text style={styles.introHeading}>OBJECTIVE</Text>
-          <Text style={styles.introText}>{objective}</Text>
+          <ScrollView
+            alwaysBounceVertical={false}
+            contentContainerStyle={styles.introScrollContent}
+            showsVerticalScrollIndicator
+            style={styles.introScroll}
+          >
+            <Text style={styles.introHeading}>THE SCENARIO</Text>
+            <Text style={styles.introText}>{description}</Text>
+
+            <Text style={styles.introHeading}>OBJECTIVE</Text>
+            <Text style={styles.introText}>{objective}</Text>
+          </ScrollView>
 
           <ScaleButton onPress={onClose} style={styles.introStartButton}>
             <Text style={styles.introStartButtonText}>BEGIN INVESTIGATION</Text>
@@ -1510,8 +1519,9 @@ const styles = StyleSheet.create({
     borderColor: AMBER,
     borderRadius: 4,
     borderWidth: 2,
-    padding: 28,
-    width: '54%',
+    maxHeight: '86%',
+    padding: 20,
+    width: '58%',
   },
   resolutionKicker: {
     color: AMBER,
@@ -1564,46 +1574,56 @@ const styles = StyleSheet.create({
     borderColor: AMBER,
     borderRadius: 8,
     borderWidth: 2,
-    padding: 24,
-    width: '80%',
-    maxHeight: '85%',
+    height: '82%',
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    paddingBottom: 16,
+    width: '78%',
   },
   introKicker: {
     color: AMBER,
     fontFamily: 'monospace',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 2,
     textAlign: 'center',
   },
   introTitle: {
     color: '#f8fafc',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
-    marginTop: 8,
+    lineHeight: 29,
+    marginTop: 6,
     textAlign: 'center',
+  },
+  introScroll: {
+    flex: 1,
+    marginTop: 2,
+  },
+  introScrollContent: {
+    paddingBottom: 14,
   },
   introHeading: {
     color: AMBER,
     fontFamily: 'monospace',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1,
-    marginTop: 18,
+    marginTop: 12,
     marginBottom: 6,
     textTransform: 'uppercase',
   },
   introText: {
     color: '#cbd5e1',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    lineHeight: 18,
+    lineHeight: 17,
   },
   introStartButton: {
     backgroundColor: AMBER,
     borderRadius: 4,
-    marginTop: 24,
-    paddingVertical: 14,
+    marginTop: 12,
+    paddingVertical: 12,
   },
   introStartButtonText: {
     color: '#020617',
@@ -1615,13 +1635,14 @@ const styles = StyleSheet.create({
   divider: {
     backgroundColor: 'rgba(255, 191, 0, 0.3)',
     height: 1,
-    marginVertical: 16,
+    marginVertical: 10,
   },
   accuseInputCard: {
     backgroundColor: '#0a0a0e',
     borderColor: '#dc2626',
     borderRadius: 8,
     borderWidth: 2,
+    maxHeight: '88%',
     padding: 20,
     width: '75%',
   },
@@ -1693,7 +1714,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   resolutionScroll: {
-    maxHeight: 280,
+    flexGrow: 0,
+    maxHeight: 260,
     marginVertical: 12,
   },
   resolutionScrollContent: {
