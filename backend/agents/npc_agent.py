@@ -1,0 +1,137 @@
+import json
+import os
+import re
+import traceback
+from typing import Any
+
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash-lite")
+model = genai.GenerativeModel(GEMINI_MODEL_NAME)
+
+
+def _extract_json(text: str) -> dict[str, Any]:
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            raise
+        return json.loads(match.group(0))
+
+
+def _fallback_response(npc_name: str, player_message: str, director_directive: str, reason: str) -> dict[str, Any]:
+    return {
+        "dialogue": (
+            f"{npc_name} studies you for a long second. "
+            "The manor has a way of making every answer sound like a confession."
+        ),
+        "trace": {
+            "observation": f"Gemini fallback used after player asked: {player_message}",
+            "inference": f"Director directive was: {director_directive}",
+            "decision": "Return a valid InterrogationResponse-shaped JSON fallback.",
+            "action": f"Handled NPC dialogue locally because Gemini failed: {reason}",
+        },
+    }
+
+
+def generate_npc_dialogue(npc_name: str, player_message: str, director_directive: str) -> dict[str, Any]:
+    prompt = f"""
+You are {npc_name}, a suspect in the 2D noir murder mystery game Echoes of the Manor.
+
+Director directive:
+{director_directive}
+
+Player message:
+{player_message}
+
+Rules:
+- Stay in character as a guarded murder mystery suspect.
+- Integrate the director directive naturally.
+- Do not reveal the culprit outright.
+- Keep dialogue concise for a mobile visual novel UI.
+- Return raw JSON only. No markdown, no code fences, no commentary.
+- The JSON must match this structure exactly:
+{{
+  "dialogue": "NPC line shown to the player",
+  "trace": {{
+    "observation": "What player behavior or message was observed",
+    "inference": "What the agent inferred",
+    "decision": "Why this response strategy was chosen",
+    "action": "What the NPC response does"
+  }}
+}}
+"""
+
+    try:
+        print(f"[npc_agent] using Gemini model: {GEMINI_MODEL_NAME}")
+        response = model.generate_content(prompt)
+        raw_text = response.text or ""
+        print("[npc_agent] raw Gemini response:", raw_text)
+        parsed = _extract_json(raw_text)
+
+        if not isinstance(parsed.get("dialogue"), str) or not isinstance(parsed.get("trace"), dict):
+            raise ValueError("Gemini response did not match InterrogationResponse JSON shape.")
+
+        return parsed
+    except Exception as exc:
+        print("[npc_agent] Gemini generation failed with raw exception:")
+        traceback.print_exception(type(exc), exc, exc.__traceback__)
+        return _fallback_response(npc_name, player_message, director_directive, str(exc))
+
+
+def evaluate_accusation_assumption(player_assumption: str, true_solution: str) -> dict[str, Any]:
+    prompt = f"""
+You are the Judgement Agent for the murder mystery game Echoes of the Manor.
+Your task is to compare the player's typed accusation assumption against the true solution of the case, and determine if the player's reasoning is correct and close enough.
+
+True Solution:
+{true_solution}
+
+Player's Assumption:
+{player_assumption}
+
+Rules:
+- The player does NOT need to match the true solution word-for-word.
+- They must grasp the general motive, method, or core clue contradictions that link the suspect to the crime.
+- If the player's assumption is extremely short, vague, or nonsensical (e.g., "they did it", "they are bad", "because of clues", "asdf"), judge it as INCORRECT.
+- If the player's explanation reasonably attempts to connect clues or events to the killer, judge it as CORRECT.
+- Return raw JSON only. No markdown, no code fences, no commentary.
+- The JSON must match this structure exactly:
+{{
+  "is_close_enough": true, // or false
+  "feedback": "A short message explaining why they are correct, or what detail they missed."
+}}
+"""
+
+    try:
+        print(f"[npc_agent] evaluating assumption using Gemini model: {GEMINI_MODEL_NAME}")
+        response = model.generate_content(prompt)
+        raw_text = response.text or ""
+        print("[npc_agent] raw evaluation response:", raw_text)
+        parsed = _extract_json(raw_text)
+        if "is_close_enough" not in parsed:
+            raise ValueError("Invalid is_close_enough in response.")
+        return {
+            "is_close_enough": bool(parsed.get("is_close_enough")),
+            "feedback": str(parsed.get("feedback") or "The details align with the crime scene.")
+        }
+    except Exception as exc:
+        print("[npc_agent] Accusation evaluation failed, using fallback:")
+        traceback.print_exception(type(exc), exc, exc.__traceback__)
+        words = player_assumption.strip().split()
+        if len(words) >= 3:
+            return {
+                "is_close_enough": True,
+                "feedback": "Your deduction is accepted. The details match the crime scene evidence."
+            }
+        else:
+            return {
+                "is_close_enough": False,
+                "feedback": "Your assumption is too brief. Provide a more detailed explanation of their motive or evidence."
+            }
