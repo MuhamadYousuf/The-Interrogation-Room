@@ -66,6 +66,8 @@ Rules:
     "action": "What the NPC response does"
   }}
 }}
+
+LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of the player's latest input. If the player types in English, you must respond in English. If the player types in Roman Urdu/Hindi (e.g., 'tum us waqt kahan the?'), you MUST respond in natural, conversational Roman Urdu. If the player types in the native Urdu/Arabic script, respond in that native script. Crucially, you must maintain your unique character persona, secrets, and tone completely intact, regardless of the language you are speaking.
 """
 
     try:
@@ -107,6 +109,8 @@ Rules:
   "is_close_enough": true, // or false
   "feedback": "A short message explaining why they are correct, or what detail they missed."
 }}
+
+LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of the player's latest input. If the player types in English, you must respond in English. If the player types in Roman Urdu/Hindi (e.g., 'tum us waqt kahan the?'), you MUST respond in natural, conversational Roman Urdu. If the player types in the native Urdu/Arabic script, respond in that native script. Crucially, you must maintain your unique character persona, secrets, and tone completely intact, regardless of the language you are speaking.
 """
 
     try:

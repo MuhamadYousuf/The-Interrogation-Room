@@ -54,6 +54,8 @@ Example Output format:
   }}
 }}
 Do NOT include any markdown code blocks (e.g. ```json) in your raw output. Output raw JSON only.
+
+LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of the player's latest input. If the player types in English, you must respond in English. If the player types in Roman Urdu/Hindi (e.g., 'tum us waqt kahan the?'), you MUST respond in natural, conversational Roman Urdu. If the player types in the native Urdu/Arabic script, respond in that native script. Crucially, you must maintain your unique character persona, secrets, and tone completely intact, regardless of the language you are speaking.
 """
     try:
         print(f"[companion_agent] generating response for message: {player_message}")

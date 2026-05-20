@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +21,8 @@ const AMBER = '#FFBF00';
 
 export function HomeScreen({ navigation, route }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
+  const { height, width } = useWindowDimensions();
+  const isCompactLandscape = width > height && height < 430;
 
   const handlePressIn = () => {
     Animated.spring(scale, {
@@ -49,18 +52,24 @@ export function HomeScreen({ navigation, route }: Props) {
         <View style={styles.shade} />
       </ImageBackground>
 
-      <View style={styles.content}>
-        <View style={styles.header}>
+      <View style={[styles.content, isCompactLandscape && styles.contentCompact]}>
+        <View style={[styles.header, isCompactLandscape && styles.headerCompact]}>
           <Text style={styles.kicker}>AI AGENT GAMEPLAY</Text>
-          <Text style={styles.title}>ECHOES</Text>
-          <Text style={styles.titleSub}>OF THE MANOR</Text>
-          <View style={styles.divider} />
-          <Text style={styles.description}>
+          <Text style={[styles.title, isCompactLandscape && styles.titleCompact]}>ECHOES</Text>
+          <Text style={[styles.titleSub, isCompactLandscape && styles.titleSubCompact]}>OF THE MANOR</Text>
+          <View style={[styles.divider, isCompactLandscape && styles.dividerCompact]} />
+          <Text style={[styles.description, isCompactLandscape && styles.descriptionCompact]}>
             A procedural noir murder mystery. Gather evidence, interrogate suspects with adaptive AI, and accuse the killer by explaining your full assumption.
           </Text>
         </View>
 
-        <Animated.View style={[styles.buttonContainer, { transform: [{ scale }] }]}>
+        <Animated.View
+          style={[
+            styles.buttonContainer,
+            isCompactLandscape && styles.buttonContainerCompact,
+            { transform: [{ scale }] },
+          ]}
+        >
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => navigation.navigate('Game', { sessionId: route.params?.sessionId })}
@@ -80,7 +89,9 @@ export function HomeScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         </Animated.View>
 
-        <Text style={styles.footer}>The manor remembers everything. Keep your alibi tight.</Text>
+        <Text style={[styles.footer, isCompactLandscape && styles.footerCompact]}>
+          The manor remembers everything. Keep your alibi tight.
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -98,14 +109,20 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 56,
+    paddingVertical: 28,
+  },
+  contentCompact: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   header: {
     alignItems: 'center',
-    marginTop: 64,
     width: '100%',
+  },
+  headerCompact: {
+    transform: [{ translateY: -10 }],
   },
   kicker: {
     color: AMBER,
@@ -117,11 +134,16 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#f8fafc',
-    fontSize: 64,
+    fontSize: 58,
     fontWeight: '900',
     letterSpacing: 8,
-    lineHeight: 64,
+    lineHeight: 60,
     textAlign: 'center',
+  },
+  titleCompact: {
+    fontSize: 46,
+    lineHeight: 48,
+    letterSpacing: 7,
   },
   titleSub: {
     color: '#cbd5e1',
@@ -132,11 +154,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  titleSubCompact: {
+    fontSize: 19,
+    lineHeight: 22,
+    marginTop: 3,
+  },
   divider: {
     backgroundColor: AMBER,
     height: 2,
-    marginVertical: 28,
+    marginVertical: 20,
     width: 80,
+  },
+  dividerCompact: {
+    marginVertical: 12,
+    width: 68,
   },
   description: {
     color: '#94a3b8',
@@ -146,8 +177,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '85%',
   },
+  descriptionCompact: {
+    fontSize: 12,
+    lineHeight: 17,
+    width: '78%',
+  },
   buttonContainer: {
-    width: '80%',
+    marginTop: 24,
+    width: '54%',
+  },
+  buttonContainerCompact: {
+    marginTop: 12,
+    width: '44%',
   },
   playButton: {
     borderRadius: 8,
@@ -158,7 +199,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 15,
   },
   playButtonText: {
     color: '#020617',
@@ -167,10 +208,16 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   footer: {
+    bottom: 14,
     color: '#475569',
     fontFamily: 'monospace',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
+    position: 'absolute',
+  },
+  footerCompact: {
+    bottom: 8,
+    fontSize: 9,
   },
 });

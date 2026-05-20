@@ -421,11 +421,9 @@ function TopHud({
         <Text style={styles.statText}>{askCount} asks</Text>
         <ScaleButton onPress={onPartner} style={styles.iconAction}>
           <MessageSquare color={AMBER} size={20} />
-          <Text style={styles.iconActionText}>Partner Riley</Text>
         </ScaleButton>
         <ScaleButton onPress={onEvidence} style={styles.iconAction}>
           <Briefcase color={AMBER} size={20} />
-          <Text style={styles.iconActionText}>Evidence Bag</Text>
         </ScaleButton>
         <ScaleButton onPress={onTrace} style={styles.traceAction}>
           <BrainCircuit color={AMBER} size={20} />
@@ -452,9 +450,7 @@ function RightNavigation({
           style={[styles.locationButton, index === activeRoomIndex && styles.locationButtonActive]}
         >
           <MapPin color={index === activeRoomIndex ? AMBER : '#94a3b8'} size={15} />
-          <Text style={[styles.locationText, index === activeRoomIndex && styles.locationTextActive]}>
-            Go to {room.name}
-          </Text>
+          <Text style={[styles.locationText, index === activeRoomIndex && styles.locationTextActive]}>{room.name}</Text>
           <ChevronRight color={index === activeRoomIndex ? AMBER : '#94a3b8'} size={16} />
         </ScaleButton>
       ))}
@@ -472,8 +468,8 @@ function SuspectDock({
   return (
     <View style={styles.suspectDock}>
       <View style={styles.dockHeader}>
-        <Text style={styles.dockTitle}>Suspects in Room</Text>
-        <Text style={styles.dockHint}>Tap a portrait to interrogate</Text>
+        <Text style={styles.dockTitle}>Suspects</Text>
+        <Text style={styles.dockHint}>Tap to interrogate</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suspectList}>
         {npcs.map((npc) => (
@@ -585,10 +581,15 @@ function InterrogationMode({
   return (
     <View style={styles.interrogationLayer}>
       <View style={styles.interrogationLeft}>
-        <ScaleButton onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity
+          activeOpacity={0.82}
+          hitSlop={{ bottom: 18, left: 18, right: 22, top: 18 }}
+          onPress={onBack}
+          style={styles.backButton}
+        >
           <ArrowLeft color={AMBER} size={18} />
           <Text style={styles.backText}>Back to Room</Text>
-        </ScaleButton>
+        </TouchableOpacity>
         <View style={styles.suspectHero}>
           <Image
             source={{ uri: selectedNpc ? portraitForNpc(selectedNpc) : DETECTIVE_FACE }}
@@ -1022,33 +1023,33 @@ const styles = StyleSheet.create({
   },
   topHud: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.64)',
     borderBottomColor: 'rgba(255, 191, 0, 0.2)',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    height: 64,
+    height: 52,
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
   },
   hudLeft: {
     flex: 1,
-    paddingRight: 18,
+    paddingRight: 12,
   },
   hudRoom: {
     color: '#f8fafc',
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '900',
   },
   hudObjective: {
     color: '#cbd5e1',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
-    marginTop: 3,
+    marginTop: 1,
   },
   hudRight: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   statItem: {
     alignItems: 'center',
@@ -1057,7 +1058,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     color: '#f8fafc',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '900',
   },
   iconAction: {
@@ -1067,15 +1068,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 8,
-    height: 38,
+    height: 34,
     justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  iconActionText: {
-    color: '#f8fafc',
-    fontSize: 12,
-    fontWeight: '800',
+    width: 42,
   },
   traceAction: {
     alignItems: 'center',
@@ -1083,15 +1078,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 191, 0, 0.45)',
     borderRadius: 4,
     borderWidth: 1,
-    height: 38,
+    height: 34,
     justifyContent: 'center',
-    width: 44,
+    width: 42,
   },
   roomInfo: {
-    left: 24,
-    maxWidth: '48%',
+    left: 20,
+    maxWidth: '38%',
     position: 'absolute',
-    top: 86,
+    top: 78,
   },
   roomLabel: {
     color: AMBER,
@@ -1102,39 +1097,37 @@ const styles = StyleSheet.create({
   },
   roomTitle: {
     color: '#f8fafc',
-    fontSize: 38,
+    fontSize: 28,
     fontWeight: '900',
-    lineHeight: 42,
-    marginTop: 4,
+    lineHeight: 31,
+    marginTop: 2,
     textShadowColor: '#020617',
     textShadowRadius: 10,
   },
   roomText: {
     color: '#dbeafe',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
-    lineHeight: 20,
-    marginTop: 8,
+    lineHeight: 16,
+    marginTop: 5,
   },
   rightRail: {
-    backgroundColor: 'rgba(0, 0, 0, 0.62)',
-    borderLeftColor: 'rgba(255, 191, 0, 0.25)',
-    borderLeftWidth: 1,
-    gap: 9,
-    paddingHorizontal: 10,
-    paddingTop: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderColor: 'rgba(255, 191, 0, 0.18)',
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 6,
+    padding: 8,
     position: 'absolute',
-    right: 0,
-    top: 64,
-    width: 176,
-    bottom: '25%',
+    right: 12,
+    top: 70,
+    width: 136,
   },
   railTitle: {
     color: AMBER,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1,
-    marginBottom: 3,
     textTransform: 'uppercase',
   },
   locationButton: {
@@ -1144,9 +1137,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    minHeight: 38,
-    paddingHorizontal: 8,
+    gap: 5,
+    minHeight: 30,
+    paddingHorizontal: 7,
   },
   locationButtonActive: {
     borderColor: AMBER,
@@ -1154,21 +1147,21 @@ const styles = StyleSheet.create({
   locationText: {
     color: '#cbd5e1',
     flex: 1,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '800',
   },
   locationTextActive: {
     color: '#f8fafc',
   },
   suspectDock: {
-    backgroundColor: 'rgba(0, 0, 0, 0.76)',
+    backgroundColor: 'rgba(0, 0, 0, 0.68)',
     borderTopColor: 'rgba(255, 191, 0, 0.28)',
     borderTopWidth: 1,
     bottom: 0,
-    height: '25%',
+    height: '21%',
     left: 0,
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: 14,
+    paddingTop: 7,
     position: 'absolute',
     right: 0,
   },
@@ -1176,22 +1169,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   dockTitle: {
     color: '#f8fafc',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   dockHint: {
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
   },
   suspectList: {
-    gap: 12,
+    gap: 9,
     paddingRight: 24,
   },
   suspectButton: {
@@ -1201,10 +1194,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
-    height: 74,
-    minWidth: 190,
-    paddingHorizontal: 10,
+    gap: 8,
+    height: 58,
+    minWidth: 164,
+    paddingHorizontal: 8,
   },
   suspectPulse: {
     borderColor: AMBER,
@@ -1213,8 +1206,8 @@ const styles = StyleSheet.create({
   },
   suspectPortrait: {
     borderRadius: 5,
-    height: 54,
-    width: 54,
+    height: 42,
+    width: 42,
   },
   attentionDot: {
     backgroundColor: AMBER,
@@ -1227,15 +1220,15 @@ const styles = StyleSheet.create({
   },
   suspectName: {
     color: '#f8fafc',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '900',
-    maxWidth: 104,
+    maxWidth: 96,
   },
   suspectRole: {
     color: AMBER,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700',
-    maxWidth: 104,
+    maxWidth: 96,
   },
   clueHotspot: {
     alignItems: 'center',
@@ -1249,25 +1242,25 @@ const styles = StyleSheet.create({
   },
   clueHotspotHidden: {
     backgroundColor: 'rgba(30, 30, 36, 0.42)',
-    height: 38,
+    height: 34,
     justifyContent: 'center',
     opacity: 0.72,
-    paddingHorizontal: 9,
-    width: 38,
+    paddingHorizontal: 8,
+    width: 34,
   },
   clueHotspotCollected: {
-    backgroundColor: 'rgba(255, 191, 0, 0.88)',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 191, 0, 0.82)',
+    paddingHorizontal: 9,
+    paddingVertical: 7,
   },
   clueHotspotSelected: {
     borderWidth: 2,
   },
   clueText: {
     color: '#f8fafc',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
-    maxWidth: 132,
+    maxWidth: 116,
   },
   clueTextCollected: {
     color: '#0f172a',
@@ -1289,17 +1282,20 @@ const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
     backgroundColor: '#1E1E24',
-    borderColor: 'rgba(255, 191, 0, 0.5)',
+    borderColor: AMBER,
     borderRadius: 4,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    elevation: 12,
     flexDirection: 'row',
     gap: 8,
     left: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    minHeight: 46,
+    minWidth: 148,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     position: 'absolute',
-    top: 10,
-    zIndex: 30,
+    top: 12,
+    zIndex: 999,
   },
   backText: {
     color: '#f8fafc',
