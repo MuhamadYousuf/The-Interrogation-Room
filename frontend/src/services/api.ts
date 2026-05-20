@@ -1,6 +1,6 @@
 import type { AgentTrace, Clue, LevelState, NPC, PlayerMetrics } from '../types/game';
 
-const BASE_URL = 'https://common-banks-rush.loca.lt';
+const BASE_URL = 'https://the-interrogation-room-backend.onrender.com';
 
 type ApiTrace = {
   observation: string;
