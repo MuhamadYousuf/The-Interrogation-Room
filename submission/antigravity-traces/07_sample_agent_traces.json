@@ -1,0 +1,43 @@
+[
+  {
+    "id": "trace-start-sample",
+    "source": "pcg_agent",
+    "observation": "A new player session started with no prior performance metrics.",
+    "inference": "The first case should establish the murder mystery loop with multiple suspects and clickable clues.",
+    "decision": "Generate a tense but readable first case.",
+    "action": "Created victim, suspects, hidden-object clues, and real solution story."
+  },
+  {
+    "id": "trace-interrogation-sample",
+    "source": "npc_agent",
+    "observation": "Player questioned a suspect about their alibi.",
+    "inference": "The player is testing timeline contradictions.",
+    "decision": "Stay guarded while giving a clue-compatible response.",
+    "action": "Returned suspect dialogue and maintained persona."
+  },
+  {
+    "id": "trace-director-sample",
+    "source": "director_agent",
+    "observation": "Player has asked many questions and collected few clues.",
+    "inference": "The player may be struggling to identify the evidence chain.",
+    "decision": "Reduce difficulty slightly by allowing softer NPC hints.",
+    "action": "Passed hint directive to NPC agent."
+  },
+  {
+    "id": "trace-accusation-sample",
+    "source": "judgement_logic",
+    "observation": "Player accused the correct suspect but gave weak reasoning.",
+    "inference": "The player guessed the killer but did not prove the case.",
+    "decision": "End the case as failed while revealing the real story.",
+    "action": "Returned failed status, solution story, and generated next level."
+  },
+  {
+    "id": "trace-next-level-sample",
+    "source": "pcg_agent",
+    "observation": "Previous case ended with low reasoning accuracy.",
+    "inference": "The next case should have a clearer clue chain.",
+    "decision": "Generate an adaptive case that avoids previous themes.",
+    "action": "Created a new mystery with different motive, method, victim, and clue logic."
+  }
+]
+
