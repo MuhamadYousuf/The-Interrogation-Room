@@ -1,6 +1,6 @@
 import type { AgentTrace, Clue, LevelState, NPC, PlayerMetrics } from '../types/game';
 
-const BASE_URL = 'http://192.168.0.101:8000';
+const BASE_URL = 'https://common-banks-rush.loca.lt';
 
 type ApiTrace = {
   observation: string;
