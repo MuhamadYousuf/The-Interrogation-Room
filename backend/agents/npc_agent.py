@@ -42,7 +42,7 @@ def _fallback_response(npc_name: str, player_message: str, director_directive: s
 
 def generate_npc_dialogue(npc_name: str, player_message: str, director_directive: str) -> dict[str, Any]:
     prompt = f"""
-You are {npc_name}, a suspect in the 2D noir murder mystery game Echoes of the Manor.
+You are {npc_name}, a suspect in the 2D noir murder mystery game The Interrogation Room.
 
 Director directive:
 {director_directive}
@@ -89,7 +89,7 @@ LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of
 
 def evaluate_accusation_assumption(player_assumption: str, true_solution: str) -> dict[str, Any]:
     prompt = f"""
-You are the Judgement Agent for the murder mystery game Echoes of the Manor.
+You are the Judgement Agent for the murder mystery game The Interrogation Room.
 Your task is to compare the player's typed accusation assumption against the true solution of the case, and determine if the player's reasoning is correct and close enough.
 
 True Solution:

@@ -1,1 +1,1 @@
-"""Pydantic schema package for Echoes of the Manor."""
+"""Pydantic schema package for The Interrogation Room."""

@@ -1,1 +1,1 @@
-"""Agentic orchestration package for Echoes of the Manor."""
+"""Agentic orchestration package for The Interrogation Room."""

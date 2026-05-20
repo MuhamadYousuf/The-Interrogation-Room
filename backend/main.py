@@ -16,7 +16,7 @@ from models.schemas import (
 )
 
 app = FastAPI(
-    title="Echoes of the Manor Agentic Orchestrator",
+    title="The Interrogation Room Agentic Orchestrator",
     description="Mock FastAPI backend for adaptive murder mystery gameplay.",
     version="0.1.0",
 )

@@ -55,8 +55,8 @@ export function HomeScreen({ navigation, route }: Props) {
       <View style={[styles.content, isCompactLandscape && styles.contentCompact]}>
         <View style={[styles.header, isCompactLandscape && styles.headerCompact]}>
           <Text style={styles.kicker}>AI AGENT GAMEPLAY</Text>
-          <Text style={[styles.title, isCompactLandscape && styles.titleCompact]}>ECHOES</Text>
-          <Text style={[styles.titleSub, isCompactLandscape && styles.titleSubCompact]}>OF THE MANOR</Text>
+          <Text style={[styles.title, isCompactLandscape && styles.titleCompact]}>THE</Text>
+          <Text style={[styles.titleSub, isCompactLandscape && styles.titleSubCompact]}>INTERROGATION ROOM</Text>
           <View style={[styles.divider, isCompactLandscape && styles.dividerCompact]} />
           <Text style={[styles.description, isCompactLandscape && styles.descriptionCompact]}>
             A procedural noir murder mystery. Gather evidence, interrogate suspects with adaptive AI, and accuse the killer by explaining your full assumption.
@@ -84,13 +84,13 @@ export function HomeScreen({ navigation, route }: Props) {
               end={{ x: 1, y: 1 }}
             >
               <Play color="#020617" size={22} fill="#020617" />
-              <Text style={styles.playButtonText}>ENTER THE MANOR</Text>
+              <Text style={styles.playButtonText}>ENTER THE ROOM</Text>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
 
         <Text style={[styles.footer, isCompactLandscape && styles.footerCompact]}>
-          The manor remembers everything. Keep your alibi tight.
+          Every answer has a shadow. Keep your case tight.
         </Text>
       </View>
     </SafeAreaView>

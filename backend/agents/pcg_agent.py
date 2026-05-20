@@ -188,7 +188,7 @@ def generate_procedural_level(
     player_summary = json.dumps(performance, indent=2)
     avoid_summary = ", ".join(avoid_themes[-5:]) if avoid_themes else "No previous cases yet."
     prompt = f"""
-You are the PCG Agent for Echoes of the Manor, a mobile noir murder mystery game.
+You are the PCG Agent for The Interrogation Room, a mobile noir murder mystery game.
 
 Design a {target_difficulty.upper()} murder mystery case for level {level_num}.
 
