@@ -26,10 +26,28 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 
 def _fallback_level(level_num: int, reason: str) -> dict[str, Any]:
+    fallback_cases = [
+        {
+            "theme": "The Bell-Rope Murder at Blackwood Manor",
+            "victim": "Father Alden, a retired chaplain found beneath the bell rope with ink on his fingertips.",
+            "solution": "Jonas Reed cut the chapel bell rope halfway through to stage Father Alden's death as a tragic accident. Jonas had been stealing historical valuables from the chapel, and Father Alden recorded the missing pieces in the archive ledger using green ink. Jonas killed him to keep him silent and escaped through the Grand Hall, leaving dry mud flakes on polished tile.",
+        },
+        {
+            "theme": "The Clockmaker's Last Toast",
+            "victim": "Mira Vale, an antique clock restorer found beside a stopped grandfather clock.",
+            "solution": "Clara Vane disabled the clock mechanism to hide the true time of death, then struck Mira with a brass winding key after Mira uncovered forged inheritance papers. The broken clock hand, missing ledger page, and fresh brass filings point back to Clara's staged timeline.",
+        },
+        {
+            "theme": "The Conservatory Without Footprints",
+            "victim": "Dr. Noel Pierce, a botanist found among shattered orchids after the storm.",
+            "solution": "Ilya Cross used the overhead irrigation walkway to cross the conservatory without touching the wet soil, then poisoned Noel with extract from a rare orchid. The clean ladder rung, cut irrigation cord, and hidden plant label expose the route and method.",
+        },
+    ]
+    case = fallback_cases[(level_num - 1) % len(fallback_cases)]
     return {
-        "theme": f"The Bell-Rope Murder at Blackwood Manor, case {level_num}",
-        "victim": "Father Alden, a retired chaplain found beneath the bell rope with ink on his fingertips.",
-        "solution": "Jonas Reed (the Groundskeeper) cut the chapel bell rope halfway through to stage Father Alden's death as a tragic accident. Jonas had been stealing historical valuables from the chapel to sell on the black market, and Father Alden discovered this, recording the discrepancy in the archive ledger using green ink. Jonas killed him to keep him silent and used his chapel keys to escape through the Grand Hall, leaving behind dry mud flakes on the hall tiles.",
+        "theme": f"{case['theme']}, case {level_num}",
+        "victim": case["victim"],
+        "solution": case["solution"],
         "suspects": [
             {
                 "id": f"level-{level_num}-npc-mara",
@@ -159,16 +177,31 @@ def _normalize_level(raw_level: dict[str, Any], level_num: int) -> dict[str, Any
     }
 
 
-def generate_procedural_level(level_num: int) -> dict[str, Any]:
+def generate_procedural_level(
+    level_num: int,
+    performance: dict[str, Any] | None = None,
+    avoid_themes: list[str] | None = None,
+) -> dict[str, Any]:
+    performance = performance or {}
+    avoid_themes = avoid_themes or []
+    target_difficulty = performance.get("target_difficulty", "tense")
+    player_summary = json.dumps(performance, indent=2)
+    avoid_summary = ", ".join(avoid_themes[-5:]) if avoid_themes else "No previous cases yet."
     prompt = f"""
 You are the PCG Agent for Echoes of the Manor, a mobile noir murder mystery game.
 
-Design a HARD murder mystery case for level {level_num}.
+Design a {target_difficulty.upper()} murder mystery case for level {level_num}.
+
+Player performance from the previous case:
+{player_summary}
+
+Previous case themes to avoid repeating:
+{avoid_summary}
 
 Return strict raw JSON only. No markdown, no code fences, no commentary.
 The JSON must have this exact structure:
 {{
-  "theme": "A poisoning at a gala",
+  "theme": "A distinctive murder mystery premise",
   "victim": "Name and brief detail",
   "solution": "A detailed narrative of how the murder actually happened, who did it, why, and how the clues tie together. Make it a complete and cohesive short story explaining the truth.",
   "suspects": [
@@ -202,7 +235,11 @@ Rules:
 - Make at least two clues misleading red herrings and at least two clues critical contradictions.
 - The mystery should be psychologically interesting: inheritance, blackmail, staged alibis, secret relationships, or professional betrayal.
 - Keep all text concise enough for a mobile visual novel UI.
-- Make the mystery different from the West Drawing Room gramophone case.
+- Make the mystery completely different from all previous themes listed above.
+- Do NOT create another poisoning-at-a-gala case unless none of the previous cases used poison or a gala.
+- Vary the murder method, location framing, motive, victim type, and clue logic each level.
+- If the player solved quickly and accurately, increase ambiguity with stronger red herrings.
+- If the player struggled, make the next clue chain clearer while still interesting.
 """
 
     try:

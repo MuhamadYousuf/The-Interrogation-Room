@@ -200,11 +200,13 @@ export async function sendAccusation(
   sessionId: string,
   npcId: string,
   assumption: string,
+  metrics: PlayerMetrics,
 ): Promise<{ status: 'success' | 'failed'; message: string; solutionStory?: string; nextLevel?: LevelState }> {
   const response = await postJson<ApiAccusationResponse>('/game/accuse', {
     sessionId,
     npcId,
     assumption,
+    current_metrics: mapMetrics(metrics),
   });
 
   return {

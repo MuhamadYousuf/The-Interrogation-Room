@@ -229,7 +229,7 @@ export function useGameState() {
       setDialogueHistory((current) => [...current, accusationLine]);
 
       try {
-        const response = await sendAccusation(currentScene.sessionId, npcId, assumption);
+        const response = await sendAccusation(currentScene.sessionId, npcId, assumption, metrics);
         const systemLine = createDialogueLine('system', response.message, npcId);
         setResolutionMessage(response.message);
         setAccusationResult({
@@ -242,7 +242,6 @@ export function useGameState() {
           // Keep active state so we can return to Home, but log success
           setDialogueHistory((current) => [...current, systemLine]);
         } else {
-          setRetryCount((current) => current + 1);
           setDialogueHistory((current) => [...current, systemLine]);
         }
       } catch (error) {
@@ -256,7 +255,7 @@ export function useGameState() {
         setIsLoading(false);
       }
     },
-    [currentScene?.sessionId, isLoading, npcs],
+    [currentScene?.sessionId, isLoading, metrics, npcs],
   );
 
   const clearAccusationResult = useCallback(() => {

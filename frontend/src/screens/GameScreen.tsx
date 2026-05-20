@@ -813,22 +813,24 @@ function ResolutionModal({
   }
 
   const success = result.status === 'success';
+  const caseEnded = Boolean(result.solutionStory);
 
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible>
-      <TouchableOpacity activeOpacity={1} onPress={success ? undefined : onClose} style={styles.resolutionBackdrop}>
+      <TouchableOpacity activeOpacity={1} onPress={caseEnded ? undefined : onClose} style={styles.resolutionBackdrop}>
         <LinearGradient colors={success ? ['#064e3b', '#020617'] : ['#7f1d1d', '#020617']} style={styles.resolutionCard}>
           <Text style={styles.resolutionKicker}>{success ? 'CASE SOLVED' : 'ACCUSATION FAILED'}</Text>
-          <Text style={styles.resolutionTitle}>{success ? 'YOU DID IT!' : 'DEDUCTION REJECTED'}</Text>
+          <Text style={styles.resolutionTitle}>{success ? 'YOU DID IT!' : 'CASE CLOSED'}</Text>
           
           <ScrollView style={styles.resolutionScroll} contentContainerStyle={styles.resolutionScrollContent}>
-            {success && result.solutionStory ? (
+            {result.solutionStory ? (
               <>
+                <Text style={styles.resolutionMessage}>{result.message}</Text>
                 <Text style={styles.resolutionSectionHeader}>THE REAL STORY</Text>
                 <Text style={styles.resolutionStoryText}>{result.solutionStory}</Text>
                 
                 <Text style={styles.resolutionConclusionText}>
-                  This was an {difficulty} case, but next time it won't be so simple.
+                  Next case will adapt to how you played this one.
                 </Text>
               </>
             ) : (
@@ -836,7 +838,7 @@ function ResolutionModal({
             )}
           </ScrollView>
           
-          {success ? (
+          {caseEnded ? (
             <ScaleButton onPress={onReturnHome} style={styles.resolutionHomeButton}>
               <Text style={styles.resolutionHomeButtonText}>RETURN TO HOME SCREEN</Text>
             </ScaleButton>

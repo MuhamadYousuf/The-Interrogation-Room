@@ -102,7 +102,8 @@ Rules:
 - The player does NOT need to match the true solution word-for-word.
 - They must grasp the general motive, method, or core clue contradictions that link the suspect to the crime.
 - If the player's assumption is extremely short, vague, or nonsensical (e.g., "they did it", "they are bad", "because of clues", "asdf"), judge it as INCORRECT.
-- If the player's explanation reasonably attempts to connect clues or events to the killer, judge it as CORRECT.
+- If the player's explanation names or implies at least one concrete clue, method, motive, timeline contradiction, alibi flaw, or planted red herring, judge it as CORRECT.
+- If the player only says the suspect is guilty without explaining why, judge it as INCORRECT even when the accused suspect is the true killer.
 - Return raw JSON only. No markdown, no code fences, no commentary.
 - The JSON must match this structure exactly:
 {{
@@ -128,8 +129,16 @@ LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of
     except Exception as exc:
         print("[npc_agent] Accusation evaluation failed, using fallback:")
         traceback.print_exception(type(exc), exc, exc.__traceback__)
-        words = player_assumption.strip().split()
-        if len(words) >= 3:
+        normalized = player_assumption.lower()
+        words = normalized.split()
+        evidence_terms = [
+            "clue", "evidence", "motive", "method", "poison", "knife", "gun", "blood",
+            "alibi", "timeline", "time", "letter", "key", "glass", "ash", "fingerprint",
+            "contradiction", "jhoot", "saboot", "wajah", "zehar", "khun", "waqt",
+            "nishan", "chabi", "khat", "alibi",
+        ]
+        has_reasoning_signal = any(term in normalized for term in evidence_terms)
+        if len(words) >= 8 and has_reasoning_signal:
             return {
                 "is_close_enough": True,
                 "feedback": "Your deduction is accepted. The details match the crime scene evidence."

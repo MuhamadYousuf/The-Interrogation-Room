@@ -100,6 +100,10 @@ class AccusationRequest(BaseModel):
     session_id: str = Field(validation_alias=AliasChoices("sessionId", "session_id"))
     npc_id: str = Field(validation_alias=AliasChoices("npcId", "npc_id", "accusedNpcId", "accused_npc_id"))
     assumption: str = Field(default="", validation_alias=AliasChoices("assumption", "player_assumption"))
+    current_metrics: PlayerMetrics = Field(
+        default_factory=PlayerMetrics,
+        validation_alias=AliasChoices("metrics", "currentMetrics", "current_metrics"),
+    )
 
 
 class StartGameRequest(BaseModel):

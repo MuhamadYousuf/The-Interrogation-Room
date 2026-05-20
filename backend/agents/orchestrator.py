@@ -56,12 +56,17 @@ def start_game(session_id: str | None = None) -> GameState:
             return state
         else:
             level_num = session_data.get("level_num", 1)
-            pcg_level = generate_procedural_level(level_num)
+            pcg_level = generate_procedural_level(
+                level_num,
+                performance=session_data.get("last_performance"),
+                avoid_themes=session_data.get("case_history", []),
+            )
             game_state = _pcg_to_game_state(session_id, level_num, pcg_level)
             killer = next((npc for npc in game_state.npcs if npc.is_killer), game_state.npcs[0])
             session_data["killer_npc_id"] = killer.id
             session_data["state"] = game_state
             session_data["solution"] = pcg_level.get("solution", "")
+            session_data.setdefault("case_history", []).append(pcg_level["theme"])
             return game_state
 
     new_session_id = session_id or _session_id()
@@ -74,6 +79,8 @@ def start_game(session_id: str | None = None) -> GameState:
         "killer_npc_id": killer.id,
         "state": game_state,
         "solution": pcg_level.get("solution", ""),
+        "case_history": [pcg_level["theme"]],
+        "last_performance": None,
     }
     return game_state
 
@@ -232,22 +239,51 @@ def handle_accusation(payload: AccusationRequest) -> AccusationResponse:
             message="The case file is missing. Start a new investigation.",
         )
 
-    if payload.npc_id != session["killer_npc_id"]:
-        return AccusationResponse(
-            status="failed",
-            message="They laugh in your face. You got the wrong person.",
-        )
-
     true_solution = session.get("solution", "")
-    eval_result = evaluate_accusation_assumption(payload.assumption, true_solution)
-    if not eval_result.get("is_close_enough"):
-        return AccusationResponse(
-            status="failed",
-            message=eval_result.get("feedback", "Your assumption doesn't quite match the clues. Keep investigating."),
+    killer_id = session["killer_npc_id"]
+    state = session.get("state")
+    killer_name = killer_id
+    accused_name = payload.npc_id
+    if state:
+        killer_name = next((npc.name for npc in state.npcs if npc.id == killer_id), killer_id)
+        accused_name = next((npc.name for npc in state.npcs if npc.id == payload.npc_id), payload.npc_id)
+
+    accused_correctly = payload.npc_id == killer_id
+    eval_result = evaluate_accusation_assumption(payload.assumption, true_solution) if accused_correctly else {
+        "is_close_enough": False,
+        "feedback": "You accused the wrong suspect, so the deduction cannot close the case correctly.",
+    }
+    reasoning_correct = bool(eval_result.get("is_close_enough"))
+
+    if accused_correctly and reasoning_correct:
+        status = "success"
+        message = (
+            f"You caught {killer_name}. Your accusation and reasoning were strong enough to close the case."
         )
+        accuracy = 1.0
+    elif accused_correctly:
+        status = "failed"
+        message = (
+            f"{killer_name} was the murderer, but your reasoning did not prove the case. "
+            f"{eval_result.get('feedback', 'The accusation was missing the decisive clue chain.')}"
+        )
+        accuracy = 0.55
+    else:
+        status = "failed"
+        message = (
+            f"You accused {accused_name}, but the real murderer was {killer_name}. "
+            "The case is over, detective."
+        )
+        accuracy = 0.2
+
+    performance = _performance_profile(payload.current_metrics, status == "success", accuracy)
 
     next_level_num = int(session["level_num"]) + 1
-    pcg_level = generate_procedural_level(next_level_num)
+    pcg_level = generate_procedural_level(
+        next_level_num,
+        performance=performance,
+        avoid_themes=session.get("case_history", []),
+    )
     next_state = _pcg_to_game_state(payload.session_id, next_level_num, pcg_level)
     killer = next((npc for npc in next_state.npcs if npc.is_killer), next_state.npcs[0])
 
@@ -257,14 +293,44 @@ def handle_accusation(payload: AccusationRequest) -> AccusationResponse:
         "state": session["state"],
         "next_level_state": next_state,
         "solution": pcg_level.get("solution", ""),
+        "case_history": [*session.get("case_history", []), pcg_level["theme"]],
+        "last_performance": performance,
     }
 
     return AccusationResponse(
-        status="success",
-        message="You caught them!",
+        status=status,
+        message=message,
         solution_story=true_solution,
         next_level=next_state,
     )
+
+
+def _performance_profile(metrics: PlayerMetrics, solved: bool, accuracy: float) -> dict:
+    clue_count = len(metrics.inspected_clue_ids)
+    fast = metrics.elapsed_seconds <= 360
+    asked_little = metrics.interrogation_count <= 5
+    struggled = metrics.elapsed_seconds >= 900 or metrics.interrogation_count >= 12 or accuracy < 0.5
+
+    if solved and fast and asked_little and clue_count >= 3:
+        target_difficulty = "tense"
+        adaptation = "Player solved efficiently with evidence. Increase ambiguity, suspect count, and red herrings."
+    elif struggled:
+        target_difficulty = "standard"
+        adaptation = "Player struggled or accused incorrectly. Make the next clue chain clearer and reduce ambiguity slightly."
+    else:
+        target_difficulty = "adaptive"
+        adaptation = "Player showed partial progress. Keep mystery challenging but make critical contradictions readable."
+
+    return {
+        "solved": solved,
+        "accuracy": accuracy,
+        "elapsed_seconds": metrics.elapsed_seconds,
+        "interrogation_count": metrics.interrogation_count,
+        "retry_count": metrics.retry_count,
+        "inspected_clue_count": clue_count,
+        "target_difficulty": target_difficulty,
+        "adaptation": adaptation,
+    }
 
 
 
