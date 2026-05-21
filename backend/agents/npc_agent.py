@@ -72,7 +72,7 @@ LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of
 
     try:
         print(f"[npc_agent] using Gemini model: {GEMINI_MODEL_NAME}")
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, request_options={"timeout": 60})
         raw_text = response.text or ""
         print("[npc_agent] raw Gemini response:", raw_text)
         parsed = _extract_json(raw_text)
@@ -116,7 +116,7 @@ LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of
 
     try:
         print(f"[npc_agent] evaluating assumption using Gemini model: {GEMINI_MODEL_NAME}")
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, request_options={"timeout": 60})
         raw_text = response.text or ""
         print("[npc_agent] raw evaluation response:", raw_text)
         parsed = _extract_json(raw_text)

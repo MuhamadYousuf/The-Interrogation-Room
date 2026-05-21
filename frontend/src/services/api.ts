@@ -63,7 +63,10 @@ type ApiAccusationResponse = {
 
 const now = () => new Date().toISOString();
 
-async function postJson<TResponse>(path: string, body?: unknown): Promise<TResponse> {
+async function postJson<TResponse>(path: string, body?: unknown, timeoutMs = 120000): Promise<TResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(`${BASE_URL}${path}`, {
       method: 'POST',
@@ -72,6 +75,7 @@ async function postJson<TResponse>(path: string, body?: unknown): Promise<TRespo
         'Content-Type': 'application/json',
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
 
     const rawText = await response.text();
@@ -85,6 +89,8 @@ async function postJson<TResponse>(path: string, body?: unknown): Promise<TRespo
   } catch (error) {
     console.error(`[api] ${path} failed`, error);
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -173,7 +179,7 @@ function mapMetrics(metrics: PlayerMetrics) {
 }
 
 export async function startGame(sessionId?: string): Promise<LevelState> {
-  const state = await postJson<ApiGameState>('/game/start', sessionId ? { session_id: sessionId } : undefined);
+  const state = await postJson<ApiGameState>('/game/start', sessionId ? { session_id: sessionId } : undefined, 240000);
   return mapGameState(state);
 }
 
@@ -188,7 +194,7 @@ export async function sendInterrogation(
     npc_id: npcId,
     player_message: message,
     current_metrics: mapMetrics(metrics),
-  });
+  }, 120000);
 
   return {
     dialogue: response.dialogue,
@@ -207,7 +213,7 @@ export async function sendAccusation(
     npcId,
     assumption,
     current_metrics: mapMetrics(metrics),
-  });
+  }, 240000);
 
   return {
     status: response.status,
@@ -241,7 +247,7 @@ export async function sendCompanionChat(
       description: clue.description,
       room: clue.room
     })),
-  });
+  }, 120000);
 
   return {
     response: response.response,

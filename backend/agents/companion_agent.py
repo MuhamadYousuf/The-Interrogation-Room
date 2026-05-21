@@ -59,7 +59,7 @@ LANGUAGE MIRRORING RULE: You must dynamically analyze the language and script of
 """
     try:
         print(f"[companion_agent] generating response for message: {player_message}")
-        raw_res = model.generate_content(prompt)
+        raw_res = model.generate_content(prompt, request_options={"timeout": 60})
         text = raw_res.text.strip()
 
         if text.startswith("```"):

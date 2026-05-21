@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  BackHandler,
   Image,
   ImageBackground,
   Modal,
@@ -77,6 +78,21 @@ const CLUE_POSITIONS = [
 ];
 
 const AMBER = '#FFBF00';
+const LOADING_BACKGROUND =
+  'https://images.unsplash.com/photo-1519974719765-e6559eac2575?auto=format&fit=crop&w=1600&q=75';
+const CASE_GENERATION_STEPS = [
+  'Writing the victim profile...',
+  'Planting hidden evidence...',
+  'Assigning suspect alibis...',
+  'Building contradictions...',
+  'Preparing the interrogation room...',
+];
+const ACCUSATION_STEPS = [
+  'Checking the accused suspect...',
+  'Comparing your reasoning with the real story...',
+  'Reviewing clues and alibi contradictions...',
+  'Preparing the final case verdict...',
+];
 
 const formatElapsed = (seconds: number) => {
   const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -92,6 +108,36 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
 const portraitForNpc = (npc: NPC) =>
   `https://api.dicebear.com/9.x/adventurer/png?seed=${encodeURIComponent(npc.name)}&backgroundColor=1E1E24&radius=12`;
+
+function CaseGenerationLoadingScreen() {
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStepIndex((current) => (current + 1) % CASE_GENERATION_STEPS.length);
+    }, 2400);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.loadingContainer}>
+      <ImageBackground resizeMode="cover" source={{ uri: LOADING_BACKGROUND }} style={styles.loadingBackground}>
+        <View style={styles.loadingShade} />
+        <View style={styles.loadingPanel}>
+          <ActivityIndicator color={AMBER} size="large" />
+          <Text style={styles.loadingKicker}>AI DIRECTOR AT WORK</Text>
+          <Text style={styles.loadingTitle}>Building your murder case</Text>
+          <Text style={styles.loadingText}>
+            This can take a few minutes while the agents generate the scenario, suspects, clues, alibis, and hidden truth.
+          </Text>
+          <Text style={styles.loadingStep}>{CASE_GENERATION_STEPS[stepIndex]}</Text>
+          <Text style={styles.loadingWarning}>Please keep the app open.</Text>
+        </View>
+      </ImageBackground>
+    </SafeAreaView>
+  );
+}
 
 export function GameScreen({ navigation, route }: Props) {
   const [screenMode, setScreenMode] = useState<ScreenMode>('room');
@@ -116,15 +162,19 @@ export function GameScreen({ navigation, route }: Props) {
     isStarting,
     errorMessage,
     accusationResult,
+    accusationError,
     companionHistory,
     isCompanionLoading,
+    isEvaluatingAccusation,
     initializeGame,
     tickElapsed,
     selectNpc,
     inspectClue,
     handleSendMessage,
     handleAccusation,
+    retryAccusation,
     clearAccusationResult,
+    clearAccusationError,
     handleSendCompanionMessage,
   } = useGameState();
 
@@ -149,6 +199,22 @@ export function GameScreen({ navigation, route }: Props) {
   useEffect(() => {
     runFade();
   }, [currentScene?.id]);
+
+  useEffect(() => {
+    if (!isStarting && !isEvaluatingAccusation) {
+      return;
+    }
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      event.preventDefault();
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [isEvaluatingAccusation, isStarting, navigation]);
 
   const activeRoom = ROOMS[activeRoomIndex];
   const sceneClues = useMemo(() => currentScene?.clues ?? [], [currentScene]);
@@ -200,6 +266,9 @@ export function GameScreen({ navigation, route }: Props) {
   };
 
   const backToRoom = () => {
+    if (isEvaluatingAccusation) {
+      return;
+    }
     runFade(() => setScreenMode('room'));
   };
 
@@ -213,12 +282,7 @@ export function GameScreen({ navigation, route }: Props) {
   };
 
   if (isStarting || !currentScene) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator color={AMBER} size="large" />
-        <Text style={styles.loadingText}>Loading case file...</Text>
-      </SafeAreaView>
-    );
+    return <CaseGenerationLoadingScreen />;
   }
 
   return (
@@ -255,7 +319,7 @@ export function GameScreen({ navigation, route }: Props) {
             dialogueHistory={dialogueHistory}
             draft={draft}
             isLoading={isLoading}
-            onAccuse={() => selectedNpc && setIsAccuseInputOpen(true)}
+            onAccuse={() => selectedNpc && !isEvaluatingAccusation && setIsAccuseInputOpen(true)}
             onBack={backToRoom}
             onChangeDraft={setDraft}
             onSend={sendMessage}
@@ -306,6 +370,13 @@ export function GameScreen({ navigation, route }: Props) {
           clearAccusationResult();
           navigation.navigate('Home', { sessionId: currentScene.sessionId });
         }}
+      />
+
+      <AccusationEvaluationModal
+        errorMessage={accusationError}
+        onDismissError={clearAccusationError}
+        onRetry={retryAccusation}
+        visible={isEvaluatingAccusation || Boolean(accusationError)}
       />
 
       <CompanionChatModal
@@ -826,12 +897,18 @@ function ResolutionModal({
 
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible>
-      <TouchableOpacity activeOpacity={1} onPress={caseEnded ? undefined : onClose} style={styles.resolutionBackdrop}>
+      <View style={styles.resolutionBackdrop}>
         <LinearGradient colors={success ? ['#064e3b', '#020617'] : ['#7f1d1d', '#020617']} style={styles.resolutionCard}>
           <Text style={styles.resolutionKicker}>{success ? 'CASE SOLVED' : 'ACCUSATION FAILED'}</Text>
           <Text style={styles.resolutionTitle}>{success ? 'YOU DID IT!' : 'CASE CLOSED'}</Text>
           
-          <ScrollView style={styles.resolutionScroll} contentContainerStyle={styles.resolutionScrollContent}>
+          <ScrollView
+            alwaysBounceVertical={false}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator
+            style={styles.resolutionScroll}
+            contentContainerStyle={styles.resolutionScrollContent}
+          >
             {result.solutionStory ? (
               <>
                 <Text style={styles.resolutionMessage}>{result.message}</Text>
@@ -852,10 +929,85 @@ function ResolutionModal({
               <Text style={styles.resolutionHomeButtonText}>RETURN TO HOME SCREEN</Text>
             </ScaleButton>
           ) : (
-            <Text style={styles.resolutionHint}>Tap outside to continue investigation</Text>
+            <ScaleButton onPress={onClose} style={styles.resolutionHomeButton}>
+              <Text style={styles.resolutionHomeButtonText}>CONTINUE INVESTIGATION</Text>
+            </ScaleButton>
           )}
         </LinearGradient>
-      </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+function AccusationEvaluationModal({
+  errorMessage,
+  onDismissError,
+  onRetry,
+  visible,
+}: {
+  errorMessage: string | null;
+  onDismissError: () => void;
+  onRetry: () => void;
+  visible: boolean;
+}) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!visible || errorMessage) {
+      return;
+    }
+
+    setElapsed(0);
+    setStepIndex(0);
+    const interval = setInterval(() => {
+      setElapsed((current) => current + 1);
+      setStepIndex((current) => (current + 1) % ACCUSATION_STEPS.length);
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [errorMessage, visible]);
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <Modal animationType="fade" transparent visible>
+      <View style={styles.evaluationBackdrop}>
+        <LinearGradient colors={['#111827', '#020617']} style={styles.evaluationCard}>
+          {errorMessage ? (
+            <>
+              <Text style={styles.evaluationKicker}>REVIEW PAUSED</Text>
+              <Text style={styles.evaluationTitle}>Your case is still active</Text>
+              <Text style={styles.evaluationText}>{errorMessage}</Text>
+              <View style={styles.evaluationActions}>
+                <ScaleButton onPress={onRetry} style={styles.evaluationPrimaryButton}>
+                  <Text style={styles.evaluationPrimaryText}>RETRY ACCUSATION</Text>
+                </ScaleButton>
+                <ScaleButton onPress={onDismissError} style={styles.evaluationSecondaryButton}>
+                  <Text style={styles.evaluationSecondaryText}>KEEP INVESTIGATING</Text>
+                </ScaleButton>
+              </View>
+            </>
+          ) : (
+            <>
+              <ActivityIndicator color={AMBER} size="large" />
+              <Text style={styles.evaluationKicker}>AI JUDGE REVIEWING</Text>
+              <Text style={styles.evaluationTitle}>Evaluating your accusation</Text>
+              <Text style={styles.evaluationText}>
+                Checking the suspect, evidence chain, motive, and your written reasoning. Please do not leave this screen.
+              </Text>
+              <Text style={styles.evaluationStep}>{ACCUSATION_STEPS[stepIndex]}</Text>
+              {elapsed >= 30 ? (
+                <Text style={styles.evaluationSlowText}>
+                  Still working. The model can take a while on detailed cases, but your investigation is locked safely.
+                </Text>
+              ) : null}
+            </>
+          )}
+        </LinearGradient>
+      </View>
     </Modal>
   );
 }
@@ -1021,16 +1173,65 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingContainer: {
-    alignItems: 'center',
     backgroundColor: '#020617',
     flex: 1,
-    gap: 12,
+  },
+  loadingBackground: {
+    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
   },
+  loadingShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(2, 6, 23, 0.72)',
+  },
+  loadingPanel: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(10, 10, 14, 0.82)',
+    borderColor: 'rgba(255, 191, 0, 0.45)',
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 28,
+    paddingVertical: 24,
+    width: '54%',
+  },
+  loadingKicker: {
+    color: AMBER,
+    fontFamily: 'monospace',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginTop: 14,
+    textAlign: 'center',
+  },
+  loadingTitle: {
+    color: '#f8fafc',
+    fontSize: 25,
+    fontWeight: '900',
+    marginTop: 6,
+    textAlign: 'center',
+  },
   loadingText: {
-    color: '#e2e8f0',
-    fontSize: 15,
+    color: '#cbd5e1',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  loadingStep: {
+    color: AMBER,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingWarning: {
+    color: '#94a3b8',
+    fontSize: 11,
     fontWeight: '800',
+    marginTop: 8,
+    textAlign: 'center',
   },
   topHud: {
     alignItems: 'center',
@@ -1519,9 +1720,9 @@ const styles = StyleSheet.create({
     borderColor: AMBER,
     borderRadius: 4,
     borderWidth: 2,
-    maxHeight: '86%',
-    padding: 20,
-    width: '58%',
+    height: '82%',
+    padding: 18,
+    width: '62%',
   },
   resolutionKicker: {
     color: AMBER,
@@ -1714,12 +1915,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   resolutionScroll: {
-    flexGrow: 0,
-    maxHeight: 260,
+    flex: 1,
     marginVertical: 12,
   },
   resolutionScrollContent: {
-    paddingBottom: 10,
+    paddingBottom: 24,
   },
   resolutionSectionHeader: {
     color: AMBER,
@@ -1755,5 +1955,89 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1,
     textAlign: 'center',
+  },
+  evaluationBackdrop: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(2, 6, 23, 0.88)',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  evaluationCard: {
+    alignItems: 'center',
+    borderColor: AMBER,
+    borderRadius: 8,
+    borderWidth: 2,
+    padding: 24,
+    width: '58%',
+  },
+  evaluationKicker: {
+    color: AMBER,
+    fontFamily: 'monospace',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  evaluationTitle: {
+    color: '#f8fafc',
+    fontSize: 24,
+    fontWeight: '900',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  evaluationText: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 20,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  evaluationStep: {
+    color: AMBER,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  evaluationSlowText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 16,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  evaluationActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18,
+  },
+  evaluationPrimaryButton: {
+    backgroundColor: AMBER,
+    borderRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  evaluationPrimaryText: {
+    color: '#020617',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  evaluationSecondaryButton: {
+    backgroundColor: '#1E1E24',
+    borderColor: 'rgba(255, 191, 0, 0.34)',
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  evaluationSecondaryText: {
+    color: '#f8fafc',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 });

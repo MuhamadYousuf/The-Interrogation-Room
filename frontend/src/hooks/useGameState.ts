@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendAccusation, sendInterrogation, startGame, sendCompanionChat } from '../services/api';
 import type { AgentTrace, Clue, DialogueLine, GameMode, LevelState, NPC, PlayerMetrics } from '../types/game';
+
+const ACTIVE_SESSION_KEY = 'the-interrogation-room.activeSessionId';
 
 const createDialogueLine = (
   speaker: DialogueLine['speaker'],
@@ -36,6 +39,9 @@ export function useGameState() {
   } | null>(null);
   const [companionHistory, setCompanionHistory] = useState<DialogueLine[]>([]);
   const [isCompanionLoading, setIsCompanionLoading] = useState(false);
+  const [isEvaluatingAccusation, setIsEvaluatingAccusation] = useState(false);
+  const [accusationError, setAccusationError] = useState<string | null>(null);
+  const [lastAccusation, setLastAccusation] = useState<{ npcId: string; assumption: string } | null>(null);
 
   const selectedNpc = useMemo(
     () => npcs.find((npc) => npc.id === selectedNpcId),
@@ -73,8 +79,13 @@ export function useGameState() {
     setErrorMessage(null);
 
     try {
-      const scene = await startGame(sessionId);
+      const savedSessionId = sessionId ?? (await AsyncStorage.getItem(ACTIVE_SESSION_KEY)) ?? undefined;
+      const scene = await startGame(savedSessionId);
       const firstNpc = scene.npcs[0];
+
+      if (scene.sessionId) {
+        await AsyncStorage.setItem(ACTIVE_SESSION_KEY, scene.sessionId);
+      }
 
       setCurrentScene(scene);
       setNpcs(scene.npcs);
@@ -86,6 +97,8 @@ export function useGameState() {
       setRetryCount(0);
       setResolutionMessage(null);
       setAccusationResult(null);
+      setAccusationError(null);
+      setLastAccusation(null);
       setCompanionHistory([
         createDialogueLine(
           'npc',
@@ -211,7 +224,7 @@ export function useGameState() {
 
   const handleAccusation = useCallback(
     async (npcId: string, assumption: string) => {
-      if (!currentScene?.sessionId || isLoading) {
+      if (!currentScene?.sessionId || isLoading || isEvaluatingAccusation) {
         return;
       }
 
@@ -223,14 +236,23 @@ export function useGameState() {
       );
 
       setMode('interrogating');
-      setIsLoading(true);
+      setIsEvaluatingAccusation(true);
       setErrorMessage(null);
+      setAccusationError(null);
       setAccusationResult(null);
+      setLastAccusation({ npcId, assumption });
       setDialogueHistory((current) => [...current, accusationLine]);
 
       try {
         const response = await sendAccusation(currentScene.sessionId, npcId, assumption, metrics);
         const systemLine = createDialogueLine('system', response.message, npcId);
+
+        if (!response.solutionStory && response.message.toLowerCase().includes('case file is missing')) {
+          setAccusationError('The backend lost this session, likely because the server restarted. Start a new case from the home screen.');
+          setDialogueHistory((current) => [...current, systemLine]);
+          return;
+        }
+
         setResolutionMessage(response.message);
         setAccusationResult({
           status: response.status,
@@ -238,25 +260,38 @@ export function useGameState() {
           solutionStory: response.solutionStory,
         });
 
-        if (response.status === 'success') {
-          // Keep active state so we can return to Home, but log success
-          setDialogueHistory((current) => [...current, systemLine]);
-        } else {
-          setDialogueHistory((current) => [...current, systemLine]);
-        }
+        setDialogueHistory((current) => [...current, systemLine]);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'The accusation could not be processed.';
-        const systemLine = createDialogueLine('system', 'The accusation could not be processed. Check the backend server and try again.');
+        const isAbort = error instanceof Error && error.name === 'AbortError';
+        const message = isAbort
+          ? 'The accusation review took too long. Your case is still active, so you can retry.'
+          : error instanceof Error
+            ? error.message
+            : 'The accusation could not be processed.';
+        const systemLine = createDialogueLine('system', 'The accusation could not be processed. Your case is still active; retry the final accusation.');
 
         setRetryCount((current) => current + 1);
         setErrorMessage(message);
+        setAccusationError(message);
         setDialogueHistory((current) => [...current, systemLine]);
       } finally {
-        setIsLoading(false);
+        setIsEvaluatingAccusation(false);
       }
     },
-    [currentScene?.sessionId, isLoading, metrics, npcs],
+    [currentScene?.sessionId, isEvaluatingAccusation, isLoading, metrics, npcs],
   );
+
+  const retryAccusation = useCallback(() => {
+    if (!lastAccusation) {
+      return;
+    }
+
+    handleAccusation(lastAccusation.npcId, lastAccusation.assumption);
+  }, [handleAccusation, lastAccusation]);
+
+  const clearAccusationError = useCallback(() => {
+    setAccusationError(null);
+  }, []);
 
   const clearAccusationResult = useCallback(() => {
     setAccusationResult(null);
@@ -320,13 +355,17 @@ export function useGameState() {
     accusationResult,
     companionHistory,
     isCompanionLoading,
+    isEvaluatingAccusation,
+    accusationError,
     initializeGame,
     tickElapsed,
     selectNpc,
     inspectClue,
     handleSendMessage,
     handleAccusation,
+    retryAccusation,
     clearAccusationResult,
+    clearAccusationError,
     handleSendCompanionMessage,
     sendInterrogation: handleSendMessage,
   };

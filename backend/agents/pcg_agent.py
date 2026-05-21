@@ -244,7 +244,7 @@ Rules:
 
     try:
         print(f"[pcg_agent] using Gemini model: {GEMINI_MODEL_NAME}")
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, request_options={"timeout": 90})
         raw_text = response.text or ""
         print("[pcg_agent] raw Gemini response:", raw_text)
         return _normalize_level(_extract_json(raw_text), level_num)
